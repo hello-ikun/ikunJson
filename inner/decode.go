@@ -33,6 +33,7 @@ const (
 	// 特殊标识信息
 	EOF    // 文件结束符号
 	FAILED // 存在错误标志
+	Struct // 结构体类型
 )
 
 var ErrUnknow = errors.New("unknown error")
@@ -152,7 +153,6 @@ func (s *Scanner) backUp() error {
 	return nil
 }
 
-// 只是简单的识别字符串
 // 只是简单的识别字符串
 func (s *Scanner) String() *TokenJson {
 	var ans string
