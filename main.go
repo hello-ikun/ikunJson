@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"compress/gzip"
 	"fmt"
-	"ikunJson/inner"
+	"github.com/hello-ikun/ikunJson/inner"
 	"io"
 	"os"
 	"path/filepath"
