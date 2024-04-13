@@ -4,10 +4,11 @@ import (
 	"bytes"
 	"compress/gzip"
 	"fmt"
-	"github.com/hello-ikun/ikunJson/inner"
 	"io"
 	"os"
 	"path/filepath"
+
+	"github.com/hello-ikun/ikunJson/inner"
 )
 
 func main() {

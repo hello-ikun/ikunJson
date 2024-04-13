@@ -7,6 +7,7 @@ import (
 	"io"
 	"strconv"
 	"unicode"
+	"unsafe"
 )
 
 // Token 表示令牌的类型
@@ -179,7 +180,8 @@ func (s *Scanner) String() *TokenJson {
 			continue
 		}
 		if r == '"' {
-			return NewTokenJson(String, ans, s.Pos)
+			// 使用 unsafe 操作，避免创建字符串副本
+			return NewTokenJson(String, *(*string)(unsafe.Pointer(&ans)), s.Pos)
 		}
 		ans += string(r)
 	}
@@ -230,20 +232,26 @@ func (s *Scanner) Number() *TokenJson {
 		}
 	}
 }
+
+// 解析数字
 func (s *Scanner) parseNumber(ans string, flag bool) *TokenJson {
+	// 使用 unsafe 操作，避免创建字符串副本
+	strPtr := *(*string)(unsafe.Pointer(&ans))
+
 	if flag {
-		num, err := strconv.ParseFloat(ans, 64)
+		num, err := strconv.ParseFloat(strPtr, 64)
 		if err != nil {
 			return tokenJson(FAILED, s.Pos)
 		}
 		return NewTokenJson(Number, num, s.Pos)
 	}
-	num, err := strconv.ParseInt(ans, 10, 64)
+	num, err := strconv.ParseInt(strPtr, 10, 64)
 	if err != nil {
 		return tokenJson(FAILED, s.Pos)
 	}
 	return NewTokenJson(Number, num, s.Pos)
 }
+
 func (s *Scanner) parseBoolOrNone(ans string) *TokenJson {
 	if ans == "null" {
 		return NewTokenJson(Null, nil, s.Pos)
@@ -285,55 +293,4 @@ func (p *Parse) Json() *TokenJson {
 	default:
 		return tokenJson
 	}
-}
-
-// parseArray处理数组或切片类型的数据
-func (p *Parse) parseObject() *TokenJson {
-	ma := make(map[interface{}]interface{}, 0)
-	for {
-		// 对于key部分进行简单的解析
-		keyTokenJson := p.Json()
-		if keyTokenJson.Type == ObjectEnd {
-			break
-		}
-		// 解析 : 分割符号
-		sepTokenJson := p.Json()
-		if sepTokenJson.Type != SeparatorColon {
-			return tokenJson(FAILED, p.Scan.Pos)
-		}
-
-		// 对于value部分进行简单的解析
-		valTokenJson := p.Json()
-		if keyTokenJson.Type == ObjectEnd {
-			break
-		}
-		// 数据填充
-		ma[keyTokenJson.Value] = valTokenJson.Value
-		// 对于后续字段 ，}进行解析
-		nextTokenJson := p.Json()
-		if nextTokenJson.Type == ObjectEnd {
-			break
-		}
-		if nextTokenJson.Type != SeparatorComma {
-			return tokenJson(FAILED, p.Scan.Pos)
-		}
-	}
-	return NewTokenJson(Map, ma, p.Scan.Pos)
-}
-
-// parseArray处理数组或切片类型的数据
-func (p *Parse) parseArray() *TokenJson {
-	arr := make([]interface{}, 0)
-	for {
-		// 只需要进行简单的value解析即可
-		tokenJson := p.Json()
-		if tokenJson.Type == SeparatorComma {
-			continue
-		}
-		if tokenJson.Type == ArrayEnd {
-			break
-		}
-		arr = append(arr, tokenJson.Value)
-	}
-	return NewTokenJson(Array, arr, p.Scan.Pos)
 }
